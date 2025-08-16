@@ -1,5 +1,0 @@
-# Require reviews from platform owners
-* @data-platform/owners
-infra/** @data-platform/infra
-orchestration/** @data-platform/airflow
-dbt/** @data-platform/analytics
