@@ -27,30 +27,6 @@ Security by default
 - S3 public access blocked, versioning and server access logs on; TLS-only enforced.
 - Data Catalog tag templates for PHI/PII classification; Policy Tags for column-level security.
 
-High-level architecture
-
-```mermaid
-flowchart LR
-	subgraph AWS
-		s3[(S3 Buckets per Domain)] -- KMS SSE --> s3
-		macie[Macie / CloudTrail / CloudWatch]
-	end
-
-	subgraph GCP
-		bq[(BigQuery Datasets + BigLake External Tables)]
-		conn[BigQuery AWS Connection]
-		composer[Cloud Composer (Airflow)]
-		sm[Secret Manager]
-		kms[KMS CMEK]
-	end
-
-	Devs -->|OIDC| CI[GitHub Actions]
-	CI -->|Terraform| AWS
-	CI -->|Terraform| GCP
-	composer -->|dbt runs| bq
-	bq <-->|federated read| s3
-	conn <-->|assume role| AWS
-```
 
 Getting started (safe defaults)
 
