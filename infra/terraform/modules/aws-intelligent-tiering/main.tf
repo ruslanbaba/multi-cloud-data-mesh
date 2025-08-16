@@ -8,6 +8,21 @@ terraform {
   }
 }
 
+# Data sources for account and region information
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
+  default     = ""
+  
+  validation {
+    condition = var.aws_region == "" || can(regex("^[a-z]{2}-[a-z]+-[0-9]$", var.aws_region))
+    error_message = "AWS region must be in format like 'us-east-1'."
+  }
+}
+
 variable "environment" { 
   description = "Environment name (dev, staging, prod)"
   type        = string
@@ -265,14 +280,14 @@ resource "aws_iam_role_policy" "cost_analyzer_policy" {
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ]
-        Resource = "arn:aws:logs:*:*:*"
+        Resource = "arn:aws:logs:${coalesce(var.aws_region, data.aws_region.current.name)}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/*"
       },
       {
         Effect = "Allow"
         Action = [
           "cloudwatch:PutMetricData"
         ]
-        Resource = "*"
+        Resource = "arn:aws:cloudwatch:${coalesce(var.aws_region, data.aws_region.current.name)}:${data.aws_caller_identity.current.account_id}:metric/*"
       }
     ]
   })

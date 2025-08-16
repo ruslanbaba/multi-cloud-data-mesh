@@ -37,8 +37,38 @@ data "aws_iam_policy_document" "kms" {
   statement {
     sid     = "EnableRootAccount"
     effect  = "Allow"
-    actions = ["kms:*"]
-  principals { type = "AWS" identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"] }
+    actions = [
+      "kms:Describe*",
+      "kms:List*",
+      "kms:Create*",
+      "kms:Update*",
+      "kms:Delete*",
+      "kms:Tag*",
+      "kms:Untag*",
+      "kms:ScheduleKeyDeletion",
+      "kms:CancelKeyDeletion"
+    ]
+    principals { type = "AWS" identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"] }
+    resources = ["*"]
+  }
+  
+  statement {
+    sid     = "EnableServiceAccess"
+    effect  = "Allow"
+    actions = [
+      "kms:Encrypt",
+      "kms:Decrypt",
+      "kms:ReEncrypt*",
+      "kms:GenerateDataKey*",
+      "kms:DescribeKey"
+    ]
+    principals { 
+      type = "Service" 
+      identifiers = [
+        "s3.amazonaws.com",
+        "logs.amazonaws.com"
+      ]
+    }
     resources = ["*"]
   }
 }
@@ -133,8 +163,13 @@ data "aws_iam_policy_document" "tls_only" {
   statement {
     sid     = "DenyInsecureTransport"
     effect  = "Deny"
-    actions = ["s3:*"]
-    principals { type = "*" identifiers = ["*"] }
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:DeleteObject",
+      "s3:ListBucket"
+    ]
+    principals { type = "AWS" identifiers = ["*"] }
     resources = [each.value.arn, "${each.value.arn}/*"]
     condition {
       test     = "Bool"
