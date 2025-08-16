@@ -1,6 +1,9 @@
 project = "multi-cloud-data-mesh"
 environment = "prod"
 
+# Terraform Cloud Configuration
+terraform_cloud_organization = "your-terraform-cloud-org"
+
 domains = [
   "admissions","labs","pharmacy","radiology","vitals","billing",
   "appointments","allergies","diagnoses","procedures","medications",

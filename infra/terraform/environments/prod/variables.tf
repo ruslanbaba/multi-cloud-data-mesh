@@ -116,7 +116,10 @@ variable "backup_retention_days" {
 variable "monitoring_notification_email" {
   description = "Email for monitoring alerts and notifications"
   type        = string
-  default     = "data-ops@example.com"
+  validation {
+    condition     = can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", var.monitoring_notification_email))
+    error_message = "Must be a valid email address."
+  }
 }
 
 variable "cost_alert_threshold_usd" {

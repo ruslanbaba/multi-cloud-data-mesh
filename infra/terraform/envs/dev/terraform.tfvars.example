@@ -1,6 +1,9 @@
 project = "multi-cloud-data-mesh"
 environment = "dev"
 
+# Terraform Cloud Configuration
+terraform_cloud_organization = "your-terraform-cloud-org"
+
 domains = [
   "admissions",
   "labs",
@@ -29,11 +32,13 @@ gcp_project_id = "CHANGE_ME"
 gcp_location   = "us-central1"
 gcp_kms_key    = "projects/CHANGE_ME/locations/us/keyRings/CHANGE_ME/cryptoKeys/CHANGE_ME"
 
-# AWS
+# AWS - Replace with actual values, do not use placeholder account IDs
 aws_region                         = "us-east-1"
 aws_bucket_prefix                  = "multi-cloud-data-mesh-domain"
 aws_log_bucket                     = "multi-cloud-data-mesh-logs-dev"
-bigquery_connection_principal_arn  = "arn:aws:iam::123456789012:role/replace-with-gcp-connection-principal"
+# SECURITY: Replace with actual GCP service account ARN from BigQuery connection
+# DO NOT use placeholder account ID 123456789012 in production
+bigquery_connection_principal_arn  = "arn:aws:iam::YOUR_ACCOUNT_ID:role/gcp-bigquery-connection-role"
 
 # Composer (optional in dev)
 composer_image_version   = "composer-3-airflow-2.9.3-build.7"

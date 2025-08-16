@@ -1,0 +1,274 @@
+# Security Configuration Template
+# Multi-Cloud Data Mesh - Production Ready
+
+# SECURITY: Replace all CHANGE_ME values with actual secure values
+# DO NOT commit this file with real values to version control
+
+# ================================
+# CORE PROJECT CONFIGURATION
+# ================================
+project_name    = "multi-cloud-data-mesh"
+environment     = "prod"
+gcp_project_id  = "CHANGE_ME-prod"
+gcp_region      = "us-central1"
+gcp_dr_region   = "us-east1"
+aws_region      = "us-east-1"
+
+# ================================
+# SECURITY NOTIFICATIONS
+# ================================
+# SECURITY: Use dedicated security team email addresses
+notification_email           = "security-alerts@yourcompany.com"
+incident_response_email      = "security-incident@yourcompany.com"
+monitoring_notification_email = "data-ops-monitoring@yourcompany.com"
+
+# Security team members for incident response
+security_team_members = [
+  "security-lead@yourcompany.com",
+  "security-analyst@yourcompany.com",
+  "incident-response@yourcompany.com"
+]
+
+# ================================
+# GITHUB/CI/CD CONFIGURATION  
+# ================================
+# SECURITY: Replace with your actual GitHub organization
+github_owner = "your-organization"
+github_repo  = "multi-cloud-data-mesh"
+
+# ================================
+# ML WORKBENCH ACCESS CONTROL
+# ================================
+# SECURITY: Only authorized data scientists and ML engineers
+allowed_ml_users = [
+  "data-scientist-1@yourcompany.com",
+  "data-scientist-2@yourcompany.com", 
+  "ml-engineer-1@yourcompany.com"
+]
+
+# ================================
+# ENCRYPTION KEYS
+# ================================
+# SECURITY: Use your actual KMS key ARNs/resource names
+# GCP KMS Key (replace with actual values)
+gcp_kms_key = "projects/CHANGE_ME-prod/locations/us-central1/keyRings/data-mesh-ring/cryptoKeys/data-mesh-key"
+
+# AWS KMS Key (replace with actual values)  
+aws_kms_key = "arn:aws:kms:us-east-1:CHANGE_ACCOUNT_ID:key/CHANGE_KEY_ID"
+
+# ================================
+# NETWORK SECURITY
+# ================================
+# VPC Configuration (replace with actual network resource names)
+network_name    = "projects/CHANGE_ME-prod/global/networks/data-mesh-vpc"
+subnetwork_name = "projects/CHANGE_ME-prod/regions/us-central1/subnetworks/data-mesh-subnet"
+
+# Secure IP ranges for access control
+allowed_ip_ranges = [
+  "10.0.0.0/8",      # Internal corporate network
+  "172.16.0.0/12",   # VPN ranges
+  "192.168.0.0/16"   # Private networks
+]
+
+# ================================
+# BILLING AND COST MANAGEMENT
+# ================================
+# SECURITY: Use actual billing account ID
+gcp_billing_account_id = "CHANGE_ME-BILLING-ACCOUNT-ID"
+
+# Cost alert thresholds
+cost_alert_threshold_usd = 50000  # $50K monthly threshold
+
+# ================================
+# SECURITY POLICIES
+# ================================
+# Security level for the environment
+security_level = "high"
+
+# Enable all security features for production
+enable_audit_logging         = true
+enable_vpc_service_controls  = true
+enable_private_google_access = true
+enable_vulnerability_scanning = true
+enable_intrusion_detection   = true
+enable_data_loss_prevention  = true
+enable_mfa                   = true
+enable_secret_scanning       = true
+enable_dependency_scanning   = true
+enable_container_scanning    = true
+
+# ================================
+# COMPLIANCE REQUIREMENTS
+# ================================
+compliance_requirements = {
+  hipaa_enabled = true   # Healthcare data compliance
+  sox_enabled   = true   # Financial compliance  
+  gdpr_enabled  = true   # EU privacy compliance
+  ccpa_enabled  = true   # California privacy compliance
+}
+
+# ================================
+# DATA RETENTION POLICIES
+# ================================
+backup_retention_days = 2555  # 7 years for HIPAA compliance
+
+data_retention_policy = {
+  hot_data_days     = 90    # Frequently accessed data
+  warm_data_days    = 365   # Moderately accessed data  
+  cold_data_days    = 1825  # 5 years for compliance
+  archive_data_days = 2555  # 7 years total retention
+}
+
+# ================================
+# SECURITY MONITORING
+# ================================
+security_monitoring_retention_days = 365  # 1 year of security logs
+
+# Session security settings
+max_failed_login_attempts = 5
+session_timeout_minutes   = 30
+
+# ================================
+# PASSWORD POLICY
+# ================================
+password_policy = {
+  min_length           = 14     # Strong password length
+  require_uppercase    = true   # Mixed case requirement
+  require_lowercase    = true   # Mixed case requirement  
+  require_numbers      = true   # Numeric requirement
+  require_symbols      = true   # Special character requirement
+  max_age_days        = 90     # Password rotation
+  prevent_reuse_count = 12     # Prevent password reuse
+}
+
+# ================================
+# CLINICAL DOMAINS
+# ================================
+# 20 clinical domains for comprehensive healthcare data mesh
+clinical_domains = [
+  "patient_demographics",
+  "clinical_notes", 
+  "lab_results",
+  "medications",
+  "allergies",
+  "immunizations", 
+  "vital_signs",
+  "procedures",
+  "diagnoses",
+  "encounters",
+  "imaging",
+  "genomics",
+  "claims",
+  "billing", 
+  "appointments",
+  "insurance",
+  "provider_data",
+  "quality_measures",
+  "outcomes",
+  "research"
+]
+
+# ================================
+# ADVANCED FEATURES
+# ================================
+enable_advanced_features   = true
+enable_disaster_recovery   = true  
+enable_cost_optimization   = true
+enable_advanced_security   = true
+
+# ML/AI Configuration
+bigquery_slot_commitment   = 2000
+streaming_max_workers      = 10
+ml_notebook_machine_type   = "n1-standard-8"
+
+# ================================
+# NETWORK SECURITY GROUPS
+# ================================
+network_security_groups = {
+  ml-workbench = {
+    description = "Security group for ML workbench access"
+    ingress_rules = [
+      {
+        from_port   = 443
+        to_port     = 443  
+        protocol    = "tcp"
+        cidr_blocks = ["10.0.0.0/8"]
+      },
+      {
+        from_port   = 8080
+        to_port     = 8080
+        protocol    = "tcp" 
+        cidr_blocks = ["10.0.0.0/8"]
+      }
+    ]
+    egress_rules = [
+      {
+        from_port   = 0
+        to_port     = 65535
+        protocol    = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+      }
+    ]
+  }
+  
+  bigquery-access = {
+    description = "Security group for BigQuery access"
+    ingress_rules = [
+      {
+        from_port   = 443
+        to_port     = 443
+        protocol    = "tcp"
+        cidr_blocks = ["10.0.0.0/8"]
+      }
+    ]
+    egress_rules = [
+      {
+        from_port   = 443
+        to_port     = 443
+        protocol    = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+      }
+    ]
+  }
+}
+
+# ================================
+# SECURITY VALIDATION
+# ================================
+# Minimum TLS version for all communications
+min_tls_version = "1.3"
+
+# Enable encryption for all data
+enable_encryption_at_rest    = true
+enable_encryption_in_transit = true
+
+# ================================
+# IMPORTANT SECURITY NOTES
+# ================================
+# 1. Never commit this file with real values to version control
+# 2. Use secret management tools for sensitive values
+# 3. Regularly rotate all credentials and keys
+# 4. Review and update security configurations quarterly
+# 5. Conduct regular security assessments and penetration testing
+# 6. Ensure all team members complete security training
+# 7. Implement change management processes for security configurations
+# 8. Monitor and audit all access to sensitive resources
+# 9. Maintain incident response procedures and contact information
+# 10. Keep all security documentation current and accessible
+
+# ================================
+# DEPLOYMENT CHECKLIST
+# ================================
+# Before deploying to production:
+# □ Replace all CHANGE_ME values with actual secure values
+# □ Validate all email addresses are correct and monitored  
+# □ Confirm KMS keys are created and accessible
+# □ Verify network configurations match your environment
+# □ Test notification systems and alert routing
+# □ Validate backup and recovery procedures
+# □ Confirm compliance requirements are met
+# □ Review security policies with security team
+# □ Conduct security assessment and penetration testing
+# □ Document incident response procedures
+# □ Train operations team on security procedures
+# □ Establish monitoring and alerting baselines

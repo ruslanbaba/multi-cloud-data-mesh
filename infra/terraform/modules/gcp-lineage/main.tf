@@ -8,11 +8,63 @@ terraform {
   }
 }
 
-variable "project_id" { type = string }
-variable "region" { type = string }
-variable "environment" { type = string }
-variable "domains" { type = list(string) }
-variable "kms_key_id" { type = string }
+variable "project_id" { 
+  description = "GCP project ID for data lineage resources"
+  type        = string
+  validation {
+    condition     = can(regex("^[a-z][a-z0-9-]{4,28}[a-z0-9]$", var.project_id))
+    error_message = "Project ID must be 6-30 characters, lowercase letters, digits, and hyphens only."
+  }
+}
+
+variable "region" { 
+  description = "GCP region for data lineage resources"
+  type        = string
+  validation {
+    condition     = can(regex("^[a-z]+-[a-z]+[0-9]$", var.region))
+    error_message = "Region must be a valid GCP region format."
+  }
+}
+
+variable "environment" { 
+  description = "Environment name (dev, staging, prod)"
+  type        = string
+  validation {
+    condition     = contains(["dev", "staging", "prod"], var.environment)
+    error_message = "Environment must be one of: dev, staging, prod."
+  }
+}
+
+variable "domains" { 
+  description = "List of clinical domains for lineage tracking"
+  type        = list(string)
+  validation {
+    condition     = length(var.domains) > 0 && length(var.domains) <= 50
+    error_message = "Domains list must contain 1-50 valid domain names."
+  }
+}
+
+variable "kms_key_id" { 
+  description = "KMS key ID for encryption"
+  type        = string
+  sensitive   = true
+  validation {
+    condition     = can(regex("^projects/.+/locations/.+/keyRings/.+/cryptoKeys/.+$", var.kms_key_id))
+    error_message = "KMS key ID must be in full resource name format."
+  }
+}
+
+variable "network_name" {
+  description = "VPC network name for Atlas cluster"
+  type        = string
+  default     = null
+}
+
+variable "subnetwork_name" {
+  description = "Subnetwork name for Atlas cluster"
+  type        = string
+  default     = null
+}
 
 # Data Lineage API enable
 resource "google_project_service" "lineage_api" {
@@ -161,16 +213,49 @@ resource "google_service_account" "lineage_tracker" {
   display_name = "Data Lineage Tracker"
 }
 
+# Security: Apply principle of least privilege for lineage tracker IAM roles
 resource "google_project_iam_member" "lineage_tracker_roles" {
   for_each = toset([
-    "roles/datacatalog.admin",
-    "roles/datalineage.admin",
-    "roles/bigquery.metadataViewer",
-    "roles/pubsub.subscriber"
+    "roles/datacatalog.viewer",         # Changed from admin to viewer
+    "roles/datalineage.viewer",         # Changed from admin to viewer  
+    "roles/bigquery.metadataViewer",    # Kept for metadata access
+    "roles/pubsub.subscriber"           # Kept for message processing
   ])
   
   project = var.project_id
   role    = each.value
+  member  = "serviceAccount:${google_service_account.lineage_tracker.email}"
+  
+  condition {
+    title       = "Time-based access restriction"
+    description = "Access expires on specified date for security"
+    expression  = "request.time < timestamp('2026-12-31T23:59:59Z')"
+  }
+}
+
+# Security: Custom role for limited lineage operations
+resource "google_project_iam_custom_role" "lineage_tracker_limited" {
+  role_id     = "lineageTrackerLimited${title(var.environment)}"
+  title       = "Lineage Tracker Limited Role - ${var.environment}"
+  description = "Limited permissions for data lineage tracking"
+  
+  permissions = [
+    "datacatalog.entries.create",
+    "datacatalog.entries.get",
+    "datacatalog.entries.list",
+    "datacatalog.entries.update",
+    "datalineage.events.create",
+    "datalineage.processes.create",
+    "datalineage.processes.get",
+    "datalineage.runs.create",
+    "pubsub.messages.ack",
+    "pubsub.subscriptions.consume"
+  ]
+}
+
+resource "google_project_iam_member" "lineage_tracker_custom" {
+  project = var.project_id
+  role    = google_project_iam_custom_role.lineage_tracker_limited.name
   member  = "serviceAccount:${google_service_account.lineage_tracker.email}"
 }
 
@@ -298,7 +383,7 @@ resource "google_bigquery_table" "lineage_dashboard_view" {
   }
 }
 
-# Apache Atlas integration (via GKE deployment)
+# Apache Atlas integration (via GKE deployment) with enhanced security
 resource "google_container_cluster" "atlas_cluster" {
   name     = "atlas-lineage-${var.environment}"
   location = var.region
@@ -306,16 +391,48 @@ resource "google_container_cluster" "atlas_cluster" {
   remove_default_node_pool = true
   initial_node_count       = 1
   
-  network    = var.network
-  subnetwork = var.subnetwork
+  # Security: Network configuration
+  network    = var.network_name
+  subnetwork = var.subnetwork_name
   
+  # Security: Private cluster configuration
+  private_cluster_config {
+    enable_private_nodes    = true
+    enable_private_endpoint = var.environment == "prod" ? true : false
+    master_ipv4_cidr_block = "172.16.0.0/28"
+  }
+  
+  # Security: Workload Identity for secure service account mapping
   workload_identity_config {
     workload_pool = "${var.project_id}.svc.id.goog"
   }
   
+  # Security: Database encryption with CMEK
   database_encryption {
     state    = "ENCRYPTED"
     key_name = var.kms_key_id
+  }
+  
+  # Security: Network policy enforcement
+  network_policy {
+    enabled = true
+  }
+  
+  # Security: Enable shielded nodes
+  enable_shielded_nodes = true
+  
+  # Security: Master authentication
+  master_auth {
+    client_certificate_config {
+      issue_client_certificate = false
+    }
+  }
+  
+  # Security: Cluster resource labels
+  resource_labels = {
+    environment = var.environment
+    purpose     = "data-lineage"
+    security-level = var.environment == "prod" ? "high" : "medium"
   }
 }
 

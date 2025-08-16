@@ -8,10 +8,60 @@ terraform {
   }
 }
 
-variable "project_id" { type = string }
-variable "region" { type = string }
-variable "environment" { type = string }
-variable "domains" { type = list(string) }
+variable "project_id" { 
+  description = "GCP project ID for cost optimization resources"
+  type        = string
+  validation {
+    condition     = can(regex("^[a-z][a-z0-9-]{4,28}[a-z0-9]$", var.project_id))
+    error_message = "Project ID must be 6-30 characters, lowercase letters, digits, and hyphens only."
+  }
+}
+
+variable "region" { 
+  description = "GCP region for cost optimization resources"
+  type        = string
+  validation {
+    condition     = can(regex("^[a-z]+-[a-z]+[0-9]$", var.region))
+    error_message = "Region must be a valid GCP region format."
+  }
+}
+
+variable "environment" { 
+  description = "Environment name (dev, staging, prod)"
+  type        = string
+  validation {
+    condition     = contains(["dev", "staging", "prod"], var.environment)
+    error_message = "Environment must be one of: dev, staging, prod."
+  }
+}
+
+variable "domains" { 
+  description = "List of clinical domains for cost optimization"
+  type        = list(string)
+  validation {
+    condition     = length(var.domains) > 0 && length(var.domains) <= 50
+    error_message = "Domains list must contain 1-50 valid domain names."
+  }
+}
+
+variable "billing_account_id" {
+  description = "Billing account ID for budget alerts"
+  type        = string
+  sensitive   = true
+  validation {
+    condition     = can(regex("^[0-9A-Z]{6}-[0-9A-Z]{6}-[0-9A-Z]{6}$", var.billing_account_id))
+    error_message = "Billing account ID must be in format XXXXXX-XXXXXX-XXXXXX."
+  }
+}
+
+variable "notification_email" {
+  description = "Email address for cost alerts and notifications"
+  type        = string
+  validation {
+    condition     = can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", var.notification_email))
+    error_message = "Must be a valid email address."
+  }
+}
 
 # BigQuery slot reservations for cost optimization
 resource "google_bigquery_reservation" "data_mesh_reservation" {
@@ -117,7 +167,16 @@ resource "google_monitoring_notification_channel" "cost_alerts" {
   type         = "email"
   
   labels = {
-    email_address = "cost-alerts@example.com"
+    email_address = var.notification_email
+  }
+  
+  # Security: Enable notification channel verification
+  enabled = true
+  
+  user_labels = {
+    environment = var.environment
+    purpose     = "cost-monitoring"
+    managed_by  = "terraform"
   }
 }
 
@@ -366,15 +425,53 @@ resource "google_service_account" "cost_optimizer" {
   display_name = "Cost Optimizer Service Account"
 }
 
+# Security: Apply principle of least privilege for cost optimizer IAM roles
 resource "google_project_iam_member" "cost_optimizer_roles" {
   for_each = toset([
-    "roles/bigquery.admin",
-    "roles/storage.admin",
-    "roles/monitoring.metricWriter"
+    "roles/bigquery.user",            # Changed from admin to user
+    "roles/storage.objectAdmin",      # Changed from admin to objectAdmin
+    "roles/monitoring.metricWriter"   # Kept for metrics
   ])
   
   project = var.project_id
   role    = each.value
+  member  = "serviceAccount:${google_service_account.cost_optimizer.email}"
+  
+  condition {
+    title       = "Time-based access restriction"
+    description = "Access expires on specified date for security"
+    expression  = "request.time < timestamp('2026-12-31T23:59:59Z')"
+  }
+}
+
+# Security: Custom role for limited BigQuery cost optimization operations
+resource "google_project_iam_custom_role" "cost_optimizer_limited" {
+  role_id     = "costOptimizerLimited${title(var.environment)}"
+  title       = "Cost Optimizer Limited Role - ${var.environment}"
+  description = "Limited permissions for automated cost optimization"
+  
+  permissions = [
+    "bigquery.reservations.create",
+    "bigquery.reservations.get",
+    "bigquery.reservations.list",
+    "bigquery.reservations.update",
+    "bigquery.assignments.create",
+    "bigquery.assignments.delete",
+    "bigquery.assignments.get",
+    "bigquery.assignments.list",
+    "bigquery.jobs.create",
+    "bigquery.jobs.get",
+    "bigquery.jobs.list",
+    "storage.buckets.get",
+    "storage.objects.create",
+    "storage.objects.get",
+    "storage.objects.list"
+  ]
+}
+
+resource "google_project_iam_member" "cost_optimizer_custom" {
+  project = var.project_id
+  role    = google_project_iam_custom_role.cost_optimizer_limited.name
   member  = "serviceAccount:${google_service_account.cost_optimizer.email}"
 }
 

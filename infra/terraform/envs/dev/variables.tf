@@ -2,6 +2,11 @@ variable "project" { type = string }
 variable "environment" { type = string }
 variable "domains" { type = list(string) }
 
+variable "terraform_cloud_organization" {
+  description = "Terraform Cloud organization name"
+  type        = string
+}
+
 variable "gcp_project_id" { type = string }
 variable "gcp_location" { type = string }
 variable "gcp_kms_key" { type = string }

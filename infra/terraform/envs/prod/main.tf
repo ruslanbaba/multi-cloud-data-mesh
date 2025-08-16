@@ -1,7 +1,7 @@
 terraform {
   required_version = ">= 1.6.0"
   backend "remote" {
-    organization = "CHANGE_ME_TFC_ORG"
+    organization = var.terraform_cloud_organization
     workspaces { name = "multi-cloud-data-mesh-prod" }
   }
   required_providers {

@@ -8,10 +8,51 @@ terraform {
   }
 }
 
-variable "environment" { type = string }
-variable "domains" { type = list(string) }
-variable "s3_bucket_name" { type = string }
-variable "kms_key_id" { type = string }
+variable "environment" { 
+  description = "Environment name (dev, staging, prod)"
+  type        = string
+  validation {
+    condition     = contains(["dev", "staging", "prod"], var.environment)
+    error_message = "Environment must be one of: dev, staging, prod."
+  }
+}
+
+variable "domains" { 
+  description = "List of clinical domains for intelligent tiering"
+  type        = list(string)
+  validation {
+    condition     = length(var.domains) > 0 && length(var.domains) <= 50
+    error_message = "Domains list must contain 1-50 valid domain names."
+  }
+}
+
+variable "s3_bucket_name" { 
+  description = "S3 bucket name for intelligent tiering"
+  type        = string
+  validation {
+    condition     = can(regex("^[a-z0-9][a-z0-9-]*[a-z0-9]$", var.s3_bucket_name))
+    error_message = "S3 bucket name must be lowercase alphanumeric with hyphens."
+  }
+}
+
+variable "kms_key_id" { 
+  description = "KMS key ID for encryption"
+  type        = string
+  sensitive   = true
+  validation {
+    condition     = can(regex("^arn:aws:kms:[a-z0-9-]+:[0-9]{12}:key/[a-f0-9-]+$", var.kms_key_id))
+    error_message = "KMS key ID must be a valid AWS KMS key ARN."
+  }
+}
+
+variable "notification_email" {
+  description = "Email address for cost alerts and notifications"
+  type        = string
+  validation {
+    condition     = can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", var.notification_email))
+    error_message = "Must be a valid email address."
+  }
+}
 
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
@@ -374,7 +415,7 @@ resource "aws_sns_topic" "cost_alerts" {
 resource "aws_sns_topic_subscription" "cost_alerts_email" {
   topic_arn = aws_sns_topic.cost_alerts.arn
   protocol  = "email"
-  endpoint  = "cost-alerts@example.com"
+  endpoint  = var.notification_email
 }
 
 output "intelligent_tiering_configs" {
