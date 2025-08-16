@@ -1,0 +1,18 @@
+name: cleanup-check
+on:
+  pull_request:
+    paths:
+      - 'infra/terraform/modules/gcp/**'
+  workflow_dispatch: {}
+
+jobs:
+  verify-no-legacy-gcp-module:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fail if legacy gcp module exists
+        run: |
+          if [ -d infra/terraform/modules/gcp ]; then
+            echo "Legacy module directory infra/terraform/modules/gcp still exists." >&2
+            exit 1
+          fi

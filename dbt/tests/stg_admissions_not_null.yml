@@ -1,0 +1,12 @@
+version: 2
+
+models:
+  - name: stg_admissions
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [patient_id, admission_ts]
+    columns:
+      - name: patient_id
+        tests: [not_null]
+      - name: admission_ts
+        tests: [not_null]

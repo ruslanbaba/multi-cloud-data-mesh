@@ -1,0 +1,9 @@
+version: 2
+
+models:
+  - name: patient_360
+    tests:
+      - not_null:
+          column_name: patient_id
+      - unique:
+          column_name: patient_id

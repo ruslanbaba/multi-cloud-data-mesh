@@ -1,0 +1,70 @@
+project = "multi-cloud-data-mesh"
+environment = "prod"
+
+domains = [
+  "admissions","labs","pharmacy","radiology","vitals","billing",
+  "appointments","allergies","diagnoses","procedures","medications",
+  "observations","immunizations","encounters","claims","registrations",
+  "careplans","devices","providers","patients"
+]
+
+# GCP
+gcp_project_id = "CHANGE_ME"
+gcp_location   = "us-central1"
+gcp_kms_key    = "projects/CHANGE_ME/locations/us/keyRings/CHANGE_ME/cryptoKeys/CHANGE_ME"
+
+# AWS
+aws_region                         = "us-east-1"
+aws_bucket_prefix                  = "multi-cloud-data-mesh-domain"
+aws_log_bucket                     = "multi-cloud-data-mesh-logs-prod"
+bigquery_connection_principal_arn  = "arn:aws:iam::123456789012:role/replace-with-gcp-connection-principal"
+
+# Composer
+composer_image_version   = "composer-3-airflow-2.9.3-build.7"
+composer_service_account = "composer-sa@CHANGE_ME.iam.gserviceaccount.com"
+vpc_network              = "projects/CHANGE_ME/global/networks/CHANGE_ME"
+vpc_subnetwork           = "projects/CHANGE_ME/regions/us-central1/subnetworks/CHANGE_ME"
+
+taxonomy_display_name    = "HIPAA-Policy-Tags"
+project = "multi-cloud-data-mesh"
+environment = "prod"
+
+domains = [
+  "admissions",
+  "labs",
+  "pharmacy",
+  "radiology",
+  "vitals",
+  "billing",
+  "appointments",
+  "allergies",
+  "diagnoses",
+  "procedures",
+  "medications",
+  "observations",
+  "immunizations",
+  "encounters",
+  "claims",
+  "registrations",
+  "careplans",
+  "devices",
+  "providers",
+  "patients"
+]
+
+# GCP
+gcp_project_id = "CHANGE_ME"
+gcp_location   = "us-central1"
+gcp_kms_key    = "projects/CHANGE_ME/locations/us/keyRings/CHANGE_ME/cryptoKeys/CHANGE_ME"
+
+# AWS
+aws_region                         = "us-east-1"
+aws_bucket_prefix                  = "multi-cloud-data-mesh-domain"
+aws_log_bucket                     = "multi-cloud-data-mesh-logs-prod"
+bigquery_connection_principal_arn  = "arn:aws:iam::123456789012:role/replace-with-gcp-connection-principal"
+
+# Composer
+composer_image_version   = "composer-3-airflow-2.9.3-build.7"
+composer_service_account = "composer-sa@CHANGE_ME.iam.gserviceaccount.com"
+vpc_network              = "projects/CHANGE_ME/global/networks/CHANGE_ME"
+vpc_subnetwork           = "projects/CHANGE_ME/regions/us-central1/subnetworks/CHANGE_ME"

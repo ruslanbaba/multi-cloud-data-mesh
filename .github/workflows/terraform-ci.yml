@@ -1,0 +1,42 @@
+name: terraform-ci
+on:
+  pull_request:
+    paths:
+      - 'infra/terraform/**'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.5
+      - name: Authenticate to GCP via OIDC
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_TERRAFORM_SA }}
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_TERRAFORM_ROLE_ARN }}
+          aws-region: us-east-1
+      - name: tfsec scan
+        uses: aquasecurity/tfsec-action@v1.0.4
+        with:
+          working_directory: infra/terraform
+      - name: Terraform Init (dev)
+        working-directory: infra/terraform/envs/dev
+        run: terraform init -input=false
+      - name: Terraform Validate
+        working-directory: infra/terraform/envs/dev
+        run: terraform validate
+      - name: Terraform Plan
+        working-directory: infra/terraform/envs/dev
+        run: terraform plan -input=false -lock=false -no-color

@@ -1,0 +1,10 @@
+version: 2
+
+models:
+  - name: stg_labs
+    columns:
+      - name: loinc_code
+        tests:
+          - accepted_values:
+              values: ["718-7", "4548-4", "94531-1"]
+              quote: true

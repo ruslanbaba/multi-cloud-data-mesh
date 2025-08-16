@@ -1,0 +1,17 @@
+import "tfplan/v2" as tfplan
+
+# Enforce encryption for S3 and BigQuery
+
+s3_encrypted = rule {
+  all tfplan.resource_changes as rc {
+    rc.type is "aws_s3_bucket_server_side_encryption_configuration" implies rc.change.after.rule.apply_server_side_encryption_by_default.sse_algorithm in ["aws:kms", "aws:kms:dsse"]
+  }
+}
+
+bq_cmek = rule {
+  all tfplan.resource_changes as rc {
+    rc.type is "google_bigquery_dataset" implies length(rc.change.after.default_encryption_configuration.kms_key_name) > 0
+  }
+}
+
+main = rule { s3_encrypted and bq_cmek }

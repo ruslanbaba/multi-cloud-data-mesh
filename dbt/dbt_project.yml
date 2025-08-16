@@ -1,0 +1,18 @@
+name: "multi_cloud_data_mesh"
+version: "1.0.0"
+config-version: 2
+profile: "multi_cloud_data_mesh"
+
+models:
+  multi_cloud_data_mesh:
+    +materialized: view
+    staging:
+      +schema: staging
+    marts:
+      +schema: marts
+
+seeds:
+  +quote_columns: false
+
+tests:
+  +store_failures: true

@@ -1,0 +1,23 @@
+multi_cloud_data_mesh:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('GCP_PROJECT_ID') }}"
+      dataset: "analytics_dev"
+      location: "{{ env_var('GCP_LOCATION', 'US') }}"
+      threads: 4
+      priority: interactive
+      timeout_seconds: 300
+      retries: 1
+    prod:
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('GCP_PROJECT_ID') }}"
+      dataset: "analytics_prod"
+      location: "{{ env_var('GCP_LOCATION', 'US') }}"
+      threads: 8
+      priority: interactive
+      timeout_seconds: 600
+      retries: 2

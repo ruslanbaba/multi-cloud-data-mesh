@@ -1,0 +1,10 @@
+version: 2
+
+models:
+  - name: stg_admissions
+    description: Standardize admissions records from external BigLake tables per domain.
+    columns:
+      - name: patient_id
+        tests: [not_null]
+      - name: admission_ts
+        tests: [not_null]

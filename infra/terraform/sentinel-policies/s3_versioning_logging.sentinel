@@ -1,0 +1,9 @@
+import "tfplan/v2" as tfplan
+
+main = rule {
+  all tfplan.resource_changes as rc {
+    rc.type is "aws_s3_bucket_versioning" implies rc.change.after.versioning_configuration.status is "Enabled"
+  } and all tfplan.resource_changes as rc2 {
+    rc2.type is "aws_s3_bucket_logging" implies length(rc2.change.after.target_bucket) > 0
+  }
+}

@@ -1,0 +1,9 @@
+import "tfplan/v2" as tfplan
+
+required = ["Project", "Environment", "DataClass"]
+
+main = rule {
+  all tfplan.resource_changes as rc {
+    rc.change.after.tags is not null implies all required as t { t in keys(rc.change.after.tags) }
+  }
+}
