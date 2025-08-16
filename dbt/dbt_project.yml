@@ -8,8 +8,12 @@ models:
     +materialized: view
     staging:
       +schema: staging
+      +post-hook:
+        - "{% if env_var('APPLY_POLICY_TAGS', 'false') == 'true' %} {{ apply_policy_tags_from_map() }} {% endif %}"
     marts:
       +schema: marts
+      +post-hook:
+        - "{% if env_var('APPLY_POLICY_TAGS', 'false') == 'true' %} {{ apply_policy_tags_from_map() }} {% endif %}"
 
 seeds:
   +quote_columns: false

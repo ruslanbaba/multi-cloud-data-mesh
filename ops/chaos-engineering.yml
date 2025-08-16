@@ -1,0 +1,67 @@
+chaos_experiments:
+  - name: "bigquery-connection-failure"
+    description: "Simulate BigQuery connection failures to test dbt resilience"
+    target:
+      type: "gcp-service"
+      service: "bigquery.googleapis.com"
+    failure_mode:
+      type: "network_delay"
+      duration: "5m"
+      delay: "10s"
+    success_criteria:
+      - "dbt retries succeed within 15 minutes"
+      - "no data corruption occurs"
+      - "alert fires within 2 minutes"
+
+  - name: "composer-node-failure"
+    description: "Simulate Composer worker node failure"
+    target:
+      type: "gke-node"
+      selector: "composer-worker"
+    failure_mode:
+      type: "pod_kill"
+      percentage: 50
+    success_criteria:
+      - "DAGs reschedule automatically"
+      - "no failed tasks beyond retry limit"
+
+  - name: "s3-access-denied"
+    description: "Simulate S3 access permission issues"
+    target:
+      type: "aws-service"
+      service: "s3"
+    failure_mode:
+      type: "access_denied"
+      duration: "3m"
+    success_criteria:
+      - "BigQuery external tables fail gracefully"
+      - "monitoring alerts fire"
+      - "automatic retry succeeds after restoration"
+
+monitoring:
+  sli_objectives:
+    data_freshness:
+      threshold: "99%"
+      window: "30d"
+      description: "Data updated within 2 hours"
+    
+    pipeline_success:
+      threshold: "99.5%"
+      window: "7d"
+      description: "dbt runs complete successfully"
+    
+    query_latency:
+      threshold: "95% under 30s"
+      window: "24h"
+      description: "BigQuery federated queries respond quickly"
+
+  alerts:
+    critical:
+      - "Pipeline failure > 3 consecutive runs"
+      - "Data freshness SLI below 95% for 1 hour"
+      - "Security scanner findings CRITICAL severity"
+    
+    warning:
+      - "Pipeline duration > 2x baseline"
+      - "S3 costs increase > 20% week-over-week"
+      - "dbt test failures > 5% of total tests"

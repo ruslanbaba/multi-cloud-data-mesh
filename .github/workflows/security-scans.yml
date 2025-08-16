@@ -1,0 +1,121 @@
+name: security-scans
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM
+
+permissions:
+  contents: read
+  security-events: write
+  id-token: write
+
+jobs:
+  sast-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python, javascript
+          queries: security-extended
+      
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  dependency-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+      
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  secrets-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: TruffleHog OSS
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+          extra_args: --debug --only-verified
+
+  container-security:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build test container for scanning
+        run: |
+          cat > Dockerfile.scan << EOF
+          FROM python:3.11-slim
+          COPY dbt/requirements.txt /tmp/
+          RUN pip install -r /tmp/requirements.txt
+          EOF
+          docker build -f Dockerfile.scan -t datamesh-scan:latest .
+      
+      - name: Run Trivy container scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'datamesh-scan:latest'
+          format: 'sarif'
+          output: 'container-results.sarif'
+      
+      - name: Upload container scan results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'container-results.sarif'
+
+  iac-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run tfsec
+        uses: aquasecurity/tfsec-action@v1.0.4
+        with:
+          working_directory: infra/terraform
+          format: sarif
+          sarif_file: tfsec.sarif
+      
+      - name: Upload tfsec results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: tfsec.sarif
+      
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: infra/terraform
+          framework: terraform
+          output_format: sarif
+          output_file_path: checkov.sarif
+      
+      - name: Upload Checkov results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: checkov.sarif

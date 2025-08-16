@@ -13,12 +13,14 @@ Repository layout
 
 - infra/terraform – IaC for AWS, GCP, and governance
 	- modules/aws – S3 ingestion buckets, KMS, IAM role for BigQuery connection
-	- modules/gcp – BigQuery datasets, BigLake connection, Composer, KMS, Data Catalog tags
+	- modules/gcp-* – Modular GCP components (BigQuery, Composer, governance, networking, monitoring)
+	- modules/aws-security-enhanced – GuardDuty, Macie, Security Hub, Config
 	- envs/{dev,prod} – Environment compositions using the modules
 	- sentinel-policies – Policy-as-code (HIPAA-oriented guardrails)
 - dbt – dbt project (models, tests, macros). No credentials checked in.
-- orchestration/composer – Airflow DAGs and requirements for Cloud Composer
-- .github/workflows – CI/CD and security scans using OIDC (keyless)
+- orchestration/composer – Airflow DAGs including data quality monitoring
+- ops/ – GitOps, chaos engineering, SRE runbooks
+- .github/workflows – CI/CD, security scans, GitOps deployment
 
 Security by default
 
@@ -54,6 +56,9 @@ Column-level security with Data Catalog Policy Tags
 - Terraform governance module creates a taxonomy and PHI policy tag; capture the output ID.
 - dbt macro `apply_policy_tags` can set policy tags on columns post-model build.
 - Example model `marts/patient_360_policy_tag.sql` applies a PHI tag to `patient_id` when env var `PHI_POLICY_TAG_ID` is provided.
+ - Alternatively, a post-hook is wired in `dbt/dbt_project.yml` to run `apply_policy_tags_from_map()` automatically when env var `APPLY_POLICY_TAGS=true`.
+	 - Provide `PHI_POLICY_TAG_ID` (and others) in Composer/CI environment.
+	 - This hook is idempotent and skips blank tags.
 
 dbt tests
 
@@ -74,4 +79,18 @@ Composer
 Sentinel
 
 - Enforces encryption, denies public S3, requires versioning+logging, and mandates tags.
+
+Enterprise-grade enhancements
+
+- Advanced Security: Multi-layer threat detection (GuardDuty, Macie, Security Hub), automated vulnerability scanning (SAST/DAST/SCA), secrets detection
+- Network Security: VPC Service Controls, Private Service Connect, network flow logs
+- Observability: SLI/SLO monitoring, custom dashboards, data quality metrics, distributed tracing readiness
+- GitOps: Automated deployments with ArgoCD-style application sync, Terraform Cloud API integration
+- Chaos Engineering: Failure scenario testing for BigQuery, Composer, and S3 connectivity
+- Data Governance: Automated data lineage tracking, quality monitoring DAGs, policy tag automation
+
+Notes
+
+- This blueprint is keyless and secure-by-default. Integrate with org logging/monitoring as needed.
+- All resources are parameterized to avoid hard-coded identifiers or credentials.
 

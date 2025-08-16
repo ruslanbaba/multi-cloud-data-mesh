@@ -1,0 +1,11 @@
+# Declarative mapping of policy tags to dbt models/columns
+# Provide full policy tag resource names as values (from Terraform outputs)
+# Example: projects/<proj>/locations/us/taxonomies/<id>/policyTags/<id>
+
+models:
+  patient_360:
+    patient_id: ${PHI_POLICY_TAG_ID}
+  stg_admissions:
+    patient_id: ${PHI_POLICY_TAG_ID}
+  stg_labs:
+    patient_id: ${PHI_POLICY_TAG_ID}

@@ -1,0 +1,69 @@
+name: gitops-deploy
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'infra/terraform/**'
+      - 'dbt/**'
+      - 'orchestration/**'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  gitops-update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Authenticate to GCP via OIDC
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_TERRAFORM_SA }}
+      
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+      
+      - name: Sync dbt project to Composer
+        run: |
+          # Sync dbt project to Cloud Storage for Composer
+          gsutil -m rsync -r -d dbt/ gs://${{ secrets.COMPOSER_BUCKET }}/data/dbt/
+          
+          # Sync DAGs to Composer
+          gsutil -m rsync -r -d orchestration/composer/dags/ gs://${{ secrets.COMPOSER_BUCKET }}/dags/
+          
+          # Update Composer environment variables
+          gcloud composer environments update ${{ secrets.COMPOSER_ENV }} \
+            --location ${{ secrets.GCP_LOCATION }} \
+            --update-env-variables DBT_TARGET=prod,APPLY_POLICY_TAGS=true
+      
+      - name: Trigger Terraform via API
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.TFC_API_TOKEN }}" \
+            -H "Content-Type: application/vnd.api+json" \
+            -d '{
+              "data": {
+                "type": "runs",
+                "attributes": {
+                  "message": "GitOps trigger from commit ${{ github.sha }}"
+                },
+                "relationships": {
+                  "workspace": {
+                    "data": {
+                      "type": "workspaces",
+                      "id": "${{ secrets.TFC_WORKSPACE_ID }}"
+                    }
+                  }
+                }
+              }
+            }' \
+            https://app.terraform.io/api/v2/runs
+            
+      - name: Update deployment status
+        run: |
+          echo "Deployment triggered for commit ${{ github.sha }}"
+          echo "Terraform workspace: ${{ secrets.TFC_WORKSPACE_ID }}"
+          echo "Composer environment updated with latest artifacts"

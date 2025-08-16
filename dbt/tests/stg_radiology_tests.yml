@@ -1,0 +1,12 @@
+version: 2
+
+models:
+  - name: stg_radiology
+    columns:
+      - name: patient_id
+        tests: [not_null]
+      - name: modality
+        tests:
+          - accepted_values:
+              values: ["CT", "MR", "US", "XR", "NM"]
+              quote: true
